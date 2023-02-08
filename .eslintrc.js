@@ -13,7 +13,10 @@ module.exports = {
     // However, that TSConfig does not include this file."
     {
       files: ['*.ts'],
-      parserOptions: { project: './tsconfig.json' },
+      parserOptions: {
+        project: './tsconfig.json',
+        tsconfigRootDir: __dirname,
+      },
       rules: {
         '@typescript-eslint/no-floating-promises': ['error'],
       },
