@@ -7,7 +7,11 @@ let epub: Epub;
 
 describe('Epub', () => {
   beforeAll(() => {
-    epub = new Epub({ id: '38e9a65c-8077-45b7-a59e-8d0ae827ca5f' });
+    epub = new Epub({
+      id: 'urn:uuid:38e9a65c-8077-45b7-a59e-8d0ae827ca5f',
+      language: 'en',
+      title: 'My title',
+    });
   });
 
   test('Create new Epub', () => {

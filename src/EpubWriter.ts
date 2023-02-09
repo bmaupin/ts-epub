@@ -27,6 +27,26 @@ export default class EpubWriter {
 </container>\n`)
     );
 
+    await zipWriter.add(
+      'EPUB/package.opf',
+      new TextReader(`<?xml version="1.0" encoding="UTF-8"?>
+<package version="3.0" unique-identifier="pub-id" xmlns="http://www.idpf.org/2007/opf">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="pub-id">${this.epub.options.id}</dc:identifier>
+    <dc:title>${this.epub.options.title}</dc:title>
+    <dc:language>${this.epub.options.language}</dc:language>
+    <meta property="dcterms:modified">${new Date().toISOString()}</meta>
+  </metadata>
+  <manifest>
+    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav" />
+  </manifest>
+  <spine>
+    <!-- TODO -->
+    <itemref idref="section0001.xhtml" />
+  </spine>
+</package>\n`)
+    );
+
     // TODO: Test adding files concurrently (https://gildas-lormeau.github.io/zip.js/api/index.html#examples)
 
     await zipWriter.close();
