@@ -19,6 +19,8 @@ describe('Epub', () => {
       'test.epub',
       Buffer.from(await (await epub.write()).arrayBuffer())
     );
+
+    // TODO: use zip.js to extract the EPUB and make sure it contains all the necessary files
   });
 });
 

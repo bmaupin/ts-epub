@@ -1,4 +1,4 @@
-import { BlobWriter, TextReader, ZipWriter } from '@zip.js/zip.js';
+import EpubWriter from './EpubWriter';
 
 interface EpubOptions {
   id: string;
@@ -10,27 +10,8 @@ export default class Epub {
   }
 
   async write(): Promise<Blob> {
-    const zipFileWriter = new BlobWriter();
-
-    const zipWriter = new ZipWriter(zipFileWriter);
-    // As per the EPUB spec, the mimetype file must come first and not be compressed
-    await zipWriter.add('mimetype', new TextReader('application/epub+zip'), {
-      level: 0,
-    });
-
-    await zipWriter.add(
-      'META-INF/container.xml',
-      new TextReader(`<?xml version="1.0" encoding="UTF-8"?>
-<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-  <rootfiles>
-    <rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml" />
-  </rootfiles>
-</container>\n`)
-    );
-
-    await zipWriter.close();
-
-    return await zipFileWriter.getData();
+    const epubWriter = new EpubWriter(this);
+    return epubWriter.write();
   }
 }
 
@@ -46,6 +27,7 @@ export default class Epub {
  * 1. Set up GitHub Actions
  * 1. Add EPUBv2 TOC
  * 1. Start adding features
+ *    1. Author
  *    1. Default CSS
  *    1. Exclude section from TOC
  *    1. Cover
