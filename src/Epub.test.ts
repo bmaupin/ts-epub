@@ -18,6 +18,15 @@ describe('Epub', () => {
     expect(epub).toBeInstanceOf(Epub);
   });
 
+  test('Add section', () => {
+    epub.addSection({
+      body: `<h1>Hello world</h1>
+             <p>Hi</p>`,
+      filename: 'first-section.xhtml',
+      title: 'First section',
+    });
+  });
+
   test('Write Epub', async () => {
     await writeFile(
       'test.epub',

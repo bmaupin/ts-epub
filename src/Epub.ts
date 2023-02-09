@@ -6,8 +6,15 @@ interface EpubOptions {
   title: string;
 }
 
+interface EpubSection {
+  body: string;
+  filename: string;
+  title: string;
+}
+
 export default class Epub {
   options: EpubOptions;
+  sections: EpubSection[] = [];
 
   /**
    * @param {EpubOptions} options
@@ -17,6 +24,18 @@ export default class Epub {
    */
   constructor(options: EpubOptions) {
     this.options = options;
+  }
+
+  addSection(section: EpubSection) {
+    if (
+      this.sections.find(
+        (someSection) => someSection.filename === section.filename
+      )
+    ) {
+      throw new Error(`Duplicate section file name: ${section.filename}`);
+    }
+
+    this.sections.push(section);
   }
 
   async write(): Promise<Blob> {
