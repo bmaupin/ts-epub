@@ -12,13 +12,23 @@ export default class Epub {
   async write(): Promise<Blob> {
     const zipFileWriter = new BlobWriter();
 
-    // As per the EPUB spec, the mimetype file must come first and must be uncompressed
-    const uncompressedZipWriter = new ZipWriter(zipFileWriter, { level: 0 });
-    await uncompressedZipWriter.add(
-      'mimetype',
-      new TextReader('application/epub+zip')
+    const zipWriter = new ZipWriter(zipFileWriter);
+    // As per the EPUB spec, the mimetype file must come first and not be compressed
+    await zipWriter.add('mimetype', new TextReader('application/epub+zip'), {
+      level: 0,
+    });
+
+    await zipWriter.add(
+      'META-INF/container.xml',
+      new TextReader(`<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml" />
+  </rootfiles>
+</container>\n`)
     );
-    await uncompressedZipWriter.close();
+
+    await zipWriter.close();
 
     return await zipFileWriter.getData();
   }
