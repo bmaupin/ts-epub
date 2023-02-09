@@ -56,7 +56,8 @@ module.exports = {
       'module',
       'net',
       'os',
-      'path',
+      // This is provided by path-browserify
+      // 'path',
       'punycode',
       'querystring',
       'readline',
