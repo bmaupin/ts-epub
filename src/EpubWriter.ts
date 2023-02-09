@@ -47,6 +47,26 @@ export default class EpubWriter {
 </package>\n`)
     );
 
+    await zipWriter.add(
+      'EPUB/nav.xhtml',
+      new TextReader(`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+  <head>
+    <title>${this.epub.options.title}</title>
+  </head>
+  <body>
+    <nav epub:type="toc">
+      <h1>Table of Contents</h1>
+      <ol>
+      <!-- TODO -->
+        <li><a href="xhtml/section0001.xhtml">Section 1</a></li>
+      </ol>
+    </nav>
+  </body>
+</html>\n`)
+    );
+
     // TODO: Test adding files concurrently (https://gildas-lormeau.github.io/zip.js/api/index.html#examples)
 
     await zipWriter.close();
