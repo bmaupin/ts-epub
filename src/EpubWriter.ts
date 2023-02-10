@@ -52,9 +52,18 @@ export default class EpubWriter {
   }
 
   private async writePackageOpf(zipWriter: ZipWriter<Blob>): Promise<void> {
+    const manifestElements = [];
     const spineElements = [];
 
     for (const section of this.epub.sections) {
+      // Use the section filename as the ID in the package.opf file, since we're already
+      // checking that they're unique
+      manifestElements.push(
+        `<item id="${section.filename}" href="${path.join(
+          INTERNAL_XHTML_DIRECTORY,
+          section.filename
+        )}" media-type="application/xhtml+xml" />`
+      );
       spineElements.push(`<itemref idref="${section.filename}" />`);
     }
 
@@ -68,6 +77,7 @@ export default class EpubWriter {
       </metadata>
       <manifest>
         <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav" />
+        ${manifestElements}
       </manifest>
       <spine>
         ${spineElements}
@@ -85,7 +95,10 @@ export default class EpubWriter {
 
     for (const section of this.epub.sections) {
       liElements.push(
-        `<li><a href="xhtml/${section.filename}">${section.title}</a></li>`
+        `<li><a href="${path.join(
+          INTERNAL_XHTML_DIRECTORY,
+          section.filename
+        )}">${section.title}</a></li>`
       );
     }
 
