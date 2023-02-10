@@ -9,7 +9,7 @@
 1. [ ] Add essential features
    1. [ ] Prettify XML source?
    1. [ ] EPUBv2 TOC
-   1. [ ] Author
+   1. [x] Author
    1. [ ] Default CSS
    1. [ ] Exclude section from TOC
    1. [ ] Cover

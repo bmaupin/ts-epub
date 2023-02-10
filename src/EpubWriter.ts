@@ -55,6 +55,11 @@ export default class EpubWriter {
   }
 
   private async writePackageOpf(zipWriter: ZipWriter<Blob>): Promise<void> {
+    let creatorElement = '';
+    if (this.epub.options.author) {
+      creatorElement = `<dc:creator id="creator">${this.epub.options.author}</dc:creator>`;
+    }
+
     const manifestElements = [];
     const spineElements = [];
 
@@ -75,6 +80,7 @@ export default class EpubWriter {
       <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
         <dc:identifier id="pub-id">${this.epub.options.id}</dc:identifier>
         <dc:title>${this.epub.options.title}</dc:title>
+        ${creatorElement}
         <dc:language>${this.epub.options.language}</dc:language>
         <meta property="dcterms:modified">${EpubWriter.generateIsoDateWithoutMilliseconds()}</meta>
       </metadata>
