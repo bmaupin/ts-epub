@@ -1,7 +1,10 @@
+import { spawn } from 'child_process';
 import { writeFile } from 'fs/promises';
 import { beforeAll, describe, expect, test } from 'vitest';
 
 import Epub from './Epub';
+
+const testEpubFilename = 'test.epub';
 
 let epub: Epub;
 
@@ -29,7 +32,7 @@ describe('Epub', () => {
 
   test('Write Epub', async () => {
     await writeFile(
-      'test.epub',
+      testEpubFilename,
       Buffer.from(await (await epub.write()).arrayBuffer())
     );
 
@@ -38,3 +41,40 @@ describe('Epub', () => {
 });
 
 // TODO: add test(s) to make sure EPUB is valid
+
+describe('epubcheck', () => {
+  test('Validate EPUB using epubcheck', async () => {
+    // TODO: check if epubcheck is installed before running this test
+
+    // This syntax has to be used to avoid vitest from exiting with "Unhandled rejection"
+    await expect(runCommand('epubcheck', [testEpubFilename])).resolves.toEqual(
+      0
+    );
+  });
+});
+
+// Run a command and return the exit code
+//
+// If the exit code isn't 0, will throw an error containing stderr
+const runCommand = async (command: string, parameters: string[]) => {
+  return new Promise((resolve, reject) => {
+    const process = spawn(command, parameters);
+    let stderr = '';
+
+    process.stderr.on('data', (data) => {
+      stderr += data;
+    });
+
+    process.on('close', (code) => {
+      if (code !== 0) {
+        reject(stderr);
+      } else {
+        resolve(code);
+      }
+    });
+
+    process.on('error', (err) => {
+      reject(err);
+    });
+  });
+};
