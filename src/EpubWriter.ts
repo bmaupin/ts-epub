@@ -29,8 +29,11 @@ export default class EpubWriter {
     return await zipFileWriter.getData();
   }
 
+  // https://www.w3.org/publishing/epub3/epub-ocf.html#sec-zip-container-mime
   private async writeMetadata(zipWriter: ZipWriter<Blob>): Promise<void> {
     await zipWriter.add('mimetype', new TextReader('application/epub+zip'), {
+      // As per the EPUB spec, the mimetype file must not contain any extra fields
+      extendedTimestamp: false,
       // As per the EPUB spec, the mimetype file must not be compressed
       level: 0,
     });
