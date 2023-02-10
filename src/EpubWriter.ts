@@ -73,7 +73,7 @@ export default class EpubWriter {
         <dc:identifier id="pub-id">${this.epub.options.id}</dc:identifier>
         <dc:title>${this.epub.options.title}</dc:title>
         <dc:language>${this.epub.options.language}</dc:language>
-        <meta property="dcterms:modified">${new Date().toISOString()}</meta>
+        <meta property="dcterms:modified">${EpubWriter.generateIsoDateWithoutMilliseconds()}</meta>
       </metadata>
       <manifest>
         <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav" />
@@ -88,6 +88,10 @@ export default class EpubWriter {
       path.join(INTERNAL_EPUB_DIRECTORY, 'package.opf'),
       new TextReader(packageOpfContent)
     );
+  }
+
+  static generateIsoDateWithoutMilliseconds(): string {
+    return new Date().toISOString().slice(0, -5) + 'Z';
   }
 
   private async writeNavXhtml(zipWriter: ZipWriter<Blob>): Promise<void> {
