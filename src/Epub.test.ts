@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import { writeFile } from 'fs/promises';
+import hasbin from 'hasbin';
 import { beforeAll, describe, expect, test } from 'vitest';
 
 import Epub from './Epub';
@@ -44,14 +45,24 @@ describe('Epub', () => {
 
 describe('epubcheck', () => {
   test('Validate EPUB using epubcheck', async () => {
-    // TODO: check if epubcheck is installed before running this test
+    const isEpubcheckAvailable = await isCommandAvailable('epubcheck');
 
-    // This syntax has to be used to avoid vitest from exiting with "Unhandled rejection"
-    await expect(runCommand('epubcheck', [testEpubFilename])).resolves.toEqual(
-      0
-    );
+    if (isEpubcheckAvailable) {
+      // This syntax has to be used to avoid vitest from exiting with "Unhandled rejection"
+      await expect(
+        runCommand('epubcheck', [testEpubFilename])
+      ).resolves.toEqual(0);
+    }
   });
 });
+
+const isCommandAvailable = async (command: string) => {
+  return new Promise((resolve) => {
+    hasbin.async(command, (result) => {
+      resolve(result);
+    });
+  });
+};
 
 // Run a command and return the exit code
 //
