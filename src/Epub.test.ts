@@ -1,3 +1,5 @@
+// @ts-expect-error: This is just for testing to work around "TypeError: blob.arrayBuffer is not a function"
+import { Blob } from 'blob-polyfill';
 import { spawn } from 'child_process';
 import { writeFile } from 'fs/promises';
 import hasbin from 'hasbin';
@@ -6,6 +8,10 @@ import { beforeAll, describe, expect, test } from 'vitest';
 import Epub from './Epub';
 
 // TODO: use zip.js to extract the EPUB and make sure it contains all the necessary files??
+// TODO: delete test files
+
+// Without this, tests fail with "TypeError: blob.arrayBuffer is not a function"
+globalThis.Blob = Blob;
 
 describe('Minimal EPUB', () => {
   const testEpubFilename = 'minimal.epub';
@@ -50,8 +56,6 @@ describe('Minimal EPUB', () => {
       ).resolves.toEqual(0);
     }
   });
-
-  // TODO: delete file
 });
 
 describe('Full-featured EPUB', () => {
@@ -98,8 +102,6 @@ describe('Full-featured EPUB', () => {
       ).resolves.toEqual(0);
     }
   });
-
-  // TODO: delete file
 });
 
 const isCommandAvailable = async (command: string) => {
