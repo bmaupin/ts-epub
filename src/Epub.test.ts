@@ -1,3 +1,4 @@
+import { BlobReader, TextWriter, ZipReader } from '@zip.js/zip.js';
 // @ts-expect-error: This is just for testing to work around "TypeError: blob.arrayBuffer is not a function"
 import { Blob } from 'blob-polyfill';
 import { spawn } from 'child_process';
@@ -17,6 +18,7 @@ describe('Minimal EPUB', () => {
   const testEpubFilename = 'minimal.epub';
 
   let epub: Epub;
+  let epubBlob: Blob;
 
   beforeAll(() => {
     epub = new Epub({
@@ -40,10 +42,31 @@ describe('Minimal EPUB', () => {
   });
 
   test('Write Epub', async () => {
+    epubBlob = await epub.write();
+
     await writeFile(
       testEpubFilename,
-      Buffer.from(await (await epub.write()).arrayBuffer())
+      Buffer.from(await epubBlob.arrayBuffer())
     );
+  });
+
+  test('Validate container.xml', async () => {
+    const zipFileReader = new BlobReader(epubBlob);
+    const zipReader = new ZipReader(zipFileReader);
+
+    for (const zipReaderEntry of await zipReader.getEntries()) {
+      if (zipReaderEntry.filename === 'META-INF/container.xml') {
+        const textWriter = new TextWriter();
+        const containerXml = await zipReaderEntry.getData(textWriter);
+
+        expect(containerXml).toEqual(`<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`);
+      }
+    }
   });
 
   test('Validate EPUB using epubcheck', async () => {

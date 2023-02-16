@@ -1,3 +1,4 @@
+import xml2js from 'isomorphic-xml2js';
 import path from 'path';
 import { BlobWriter, TextReader, ZipWriter } from '@zip.js/zip.js';
 
@@ -5,6 +6,8 @@ import Epub from './Epub';
 
 const INTERNAL_EPUB_DIRECTORY = 'EPUB';
 const INTERNAL_XHTML_DIRECTORY = 'xhtml';
+
+// TODO: prettify/validate all XML
 
 export default class EpubWriter {
   private epub: Epub;
@@ -40,7 +43,6 @@ export default class EpubWriter {
   }
 
   private async writeContainerXml(zipWriter: ZipWriter<Blob>): Promise<void> {
-    // TODO: use a library to format the content so I don't have to worry about whitespace
     const containerXmlContent = `<?xml version="1.0" encoding="UTF-8"?>
     <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
       <rootfiles>
@@ -50,38 +52,20 @@ export default class EpubWriter {
 
     await zipWriter.add(
       'META-INF/container.xml',
-      new TextReader(EpubWriter.prettifyXml(containerXmlContent))
+      new TextReader(await EpubWriter.prettifyXml(containerXmlContent))
     );
   }
 
-  // https://stackoverflow.com/a/47317538/399105
-  static prettifyXml(sourceXml: string): string {
-    const xmlDoc = new DOMParser().parseFromString(
-      sourceXml,
-      'application/xml'
-    );
-    const xsltDoc = new DOMParser().parseFromString(
-      [
-        // describes how we want to modify the XML - indent everything
-        '<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform">',
-        '  <xsl:strip-space elements="*"/>',
-        '  <xsl:template match="para[content-style][not(text())]">', // change to just text() to strip space in text nodes
-        '    <xsl:value-of select="normalize-space(.)"/>',
-        '  </xsl:template>',
-        '  <xsl:template match="node()|@*">',
-        '    <xsl:copy><xsl:apply-templates select="node()|@*"/></xsl:copy>',
-        '  </xsl:template>',
-        '  <xsl:output indent="yes"/>',
-        '</xsl:stylesheet>',
-      ].join('\n'),
-      'application/xml'
-    );
+  static async prettifyXml(sourceXml: string): Promise<string> {
+    const parsedXml = await xml2js.parseStringPromise(sourceXml);
 
-    const xsltProcessor = new XSLTProcessor();
-    xsltProcessor.importStylesheet(xsltDoc);
-    const resultDoc = xsltProcessor.transformToDocument(xmlDoc);
-    const resultXml = new XMLSerializer().serializeToString(resultDoc);
-    return resultXml;
+    // xml2js adds 'standalone="yes"' to the XML header. It's not a big deal, but to keep
+    // things to a minimum, add the header manually
+    const xmlHeader = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    const builder = new xml2js.Builder({
+      headless: true,
+    });
+    return `${xmlHeader}${builder.buildObject(parsedXml)}`;
   }
 
   private async writePackageOpf(zipWriter: ZipWriter<Blob>): Promise<void> {
