@@ -140,7 +140,7 @@ export default class EpubWriter {
 
   private async writeSections(
     zipWriter: ZipWriter<Blob>,
-    validateXml: boolean
+    validateSections: boolean
   ): Promise<void> {
     // TODO: Test adding files concurrently (https://gildas-lormeau.github.io/zip.js/api/index.html#examples)
 
@@ -155,26 +155,25 @@ export default class EpubWriter {
         </body>
       </html>`;
 
-      let textReader: TextReader;
-      if (validateXml) {
-        textReader = new TextReader(
-          await EpubWriter.prettifyXml(sectionContent)
-        );
-      } else {
-        textReader = new TextReader(sectionContent);
-      }
-
       await zipWriter.add(
         path.join(
           INTERNAL_EPUB_DIRECTORY,
           INTERNAL_XHTML_DIRECTORY,
           section.filename
         ),
-        textReader
+        new TextReader(
+          validateSections
+            ? await EpubWriter.prettifyXml(sectionContent)
+            : sectionContent
+        )
       );
     }
   }
 
+  // This is primarily for prettifying the XML, which makes testing easier (we don't have
+  // to worry about whitespace for the XML templates) and also makes the final generated
+  // EPUB nicer. Because this has to parse the XML to prettify it, it also acts as a
+  // sanity check for ensuring the source is valid XML as it will throw an error if not.
   static async prettifyXml(sourceXml: string): Promise<string> {
     const parsedXml = await xml2js.parseStringPromise(sourceXml);
 
