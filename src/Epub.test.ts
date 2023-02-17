@@ -9,21 +9,21 @@ import { beforeAll, describe, expect, test, vi } from 'vitest';
 import Epub from './Epub';
 
 // TODO: figure out how to test individual features; test them all in one full-featured suite? or one by one?
-// TODO: Add individual file testing to full-featured EPUB tests
 // TODO: delete test files
 
 // Without this, tests fail with "TypeError: blob.arrayBuffer is not a function"
 globalThis.Blob = Blob;
 
+const testDateString = '2023-02-16T18:35:03Z';
+const testEpubLanguage = 'en';
+const testEpubId = 'urn:uuid:38e9a65c-8077-45b7-a59e-8d0ae827ca5f';
+const testEpubTitle = 'My title';
+const testSectionBody = '<h1>Hello world</h1>\n    <p>Hi</p>';
+const testSectionFilename = 'first-section.xhtml';
+const testSectionTitle = 'First section';
+
 describe('Minimal EPUB', () => {
-  const testDateString = '2023-02-16T18:35:03Z';
-  const testEpubLanguage = 'en';
-  const testEpubId = 'urn:uuid:38e9a65c-8077-45b7-a59e-8d0ae827ca5f';
   const testEpubFilename = 'minimal.epub';
-  const testEpubTitle = 'My title';
-  const testSectionBody = '<h1>Hello world</h1>\n    <p>Hi</p>';
-  const testSectionFilename = 'first-section.xhtml';
-  const testSectionTitle = 'First section';
 
   let epub: Epub;
   let epubBlob: Blob;
@@ -86,27 +86,6 @@ describe('Minimal EPUB', () => {
     );
   });
 
-  test('Validate nav.xml', async () => {
-    expect(await getFileContentFromZip(zipReader, 'EPUB/nav.xhtml')).toEqual(
-      `<?xml version="1.0" encoding="UTF-8"?>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
-  <head>
-    <title>${testEpubTitle}</title>
-  </head>
-  <body>
-    <nav epub:type="toc">
-      <h1>Table of Contents</h1>
-      <ol>
-        <li>
-          <a href="xhtml/${testSectionFilename}">${testSectionTitle}</a>
-        </li>
-      </ol>
-    </nav>
-  </body>
-</html>`
-    );
-  });
-
   test('Validate package.opf', async () => {
     expect(await getFileContentFromZip(zipReader, 'EPUB/package.opf')).toEqual(
       `<?xml version="1.0" encoding="UTF-8"?>
@@ -125,6 +104,27 @@ describe('Minimal EPUB', () => {
     <itemref idref="${testSectionFilename}"/>
   </spine>
 </package>`
+    );
+  });
+
+  test('Validate nav.xml', async () => {
+    expect(await getFileContentFromZip(zipReader, 'EPUB/nav.xhtml')).toEqual(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+  <head>
+    <title>${testEpubTitle}</title>
+  </head>
+  <body>
+    <nav epub:type="toc">
+      <h1>Table of Contents</h1>
+      <ol>
+        <li>
+          <a href="xhtml/${testSectionFilename}">${testSectionTitle}</a>
+        </li>
+      </ol>
+    </nav>
+  </body>
+</html>`
     );
   });
 
@@ -160,16 +160,19 @@ describe('Minimal EPUB', () => {
 });
 
 describe('Full-featured EPUB', () => {
+  const testEpubAuthor = 'Sequester Grundelplith';
   const testEpubFilename = 'full.epub';
 
   let epub: Epub;
+  let epubBlob: Blob;
+  let zipReader: ZipReader<Blob>;
 
   beforeAll(() => {
     epub = new Epub({
-      author: 'Turd Ferguson',
-      id: 'urn:uuid:38e9a65c-8077-45b7-a59e-8d0ae827ca5f',
-      language: 'en',
-      title: 'My title',
+      author: testEpubAuthor,
+      id: testEpubId,
+      language: testEpubLanguage,
+      title: testEpubTitle,
     });
   });
 
@@ -179,17 +182,49 @@ describe('Full-featured EPUB', () => {
 
   test('Add section', () => {
     epub.addSection({
-      body: `<h1>Hello world</h1>
-             <p>Hi</p>`,
-      filename: 'first-section.xhtml',
-      title: 'First section',
+      body: testSectionBody,
+      filename: testSectionFilename,
+      title: testSectionTitle,
     });
   });
 
   test('Write Epub', async () => {
+    // Use a consistent timestamp for tests
+    vi.setSystemTime(new Date(testDateString));
+
+    // These will be used by our tests to validate the exact content of the EPUB
+    epubBlob = await epub.write();
+    const zipFileReader = new BlobReader(epubBlob);
+    zipReader = new ZipReader(zipFileReader);
+
+    // This will be used by epubcheck to do proper EPUB validation
     await writeFile(
       testEpubFilename,
-      Buffer.from(await (await epub.write()).arrayBuffer())
+      Buffer.from(await epubBlob.arrayBuffer())
+    );
+
+    expect(await doesFileExist(testEpubFilename)).toBe(true);
+  });
+
+  test('Validate package.opf', async () => {
+    expect(await getFileContentFromZip(zipReader, 'EPUB/package.opf')).toEqual(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<package version="3.0" unique-identifier="pub-id" xmlns="http://www.idpf.org/2007/opf">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="pub-id">${testEpubId}</dc:identifier>
+    <dc:title>${testEpubTitle}</dc:title>
+    <dc:creator id="creator">${testEpubAuthor}</dc:creator>
+    <dc:language>${testEpubLanguage}</dc:language>
+    <meta property="dcterms:modified">${testDateString}</meta>
+  </metadata>
+  <manifest>
+    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="${testSectionFilename}" href="xhtml/${testSectionFilename}" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine>
+    <itemref idref="${testSectionFilename}"/>
+  </spine>
+</package>`
     );
   });
 
