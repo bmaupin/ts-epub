@@ -16,7 +16,7 @@ export default class EpubWriter {
     this.epub = epub;
   }
 
-  async write(): Promise<Blob> {
+  async write(validateSections = true): Promise<Blob> {
     const zipFileWriter = new BlobWriter();
     const zipWriter = new ZipWriter(zipFileWriter);
 
@@ -25,7 +25,7 @@ export default class EpubWriter {
     await this.writeContainerXml(zipWriter);
     await this.writePackageOpf(zipWriter);
     await this.writeNavXhtml(zipWriter);
-    await this.writeSections(zipWriter);
+    await this.writeSections(zipWriter, validateSections);
 
     await zipWriter.close();
 
@@ -138,7 +138,10 @@ export default class EpubWriter {
     );
   }
 
-  private async writeSections(zipWriter: ZipWriter<Blob>): Promise<void> {
+  private async writeSections(
+    zipWriter: ZipWriter<Blob>,
+    validateXml: boolean
+  ): Promise<void> {
     // TODO: Test adding files concurrently (https://gildas-lormeau.github.io/zip.js/api/index.html#examples)
 
     for (const section of this.epub.sections) {
@@ -152,13 +155,22 @@ export default class EpubWriter {
         </body>
       </html>`;
 
+      let textReader: TextReader;
+      if (validateXml) {
+        textReader = new TextReader(
+          await EpubWriter.prettifyXml(sectionContent)
+        );
+      } else {
+        textReader = new TextReader(sectionContent);
+      }
+
       await zipWriter.add(
         path.join(
           INTERNAL_EPUB_DIRECTORY,
           INTERNAL_XHTML_DIRECTORY,
           section.filename
         ),
-        new TextReader(sectionContent)
+        textReader
       );
     }
   }

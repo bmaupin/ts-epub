@@ -8,7 +8,8 @@ import { beforeAll, describe, expect, test, vi } from 'vitest';
 
 import Epub from './Epub';
 
-// TODO: use zip.js to extract the EPUB and make sure it contains all the necessary files??
+// TODO: figure out how to test individual features; test them all in one full-featured suite? or one by one?
+// TODO: Add individual file testing to full-featured EPUB tests
 // TODO: delete test files
 
 // Without this, tests fail with "TypeError: blob.arrayBuffer is not a function"
@@ -20,6 +21,7 @@ describe('Minimal EPUB', () => {
   const testEpubId = 'urn:uuid:38e9a65c-8077-45b7-a59e-8d0ae827ca5f';
   const testEpubFilename = 'minimal.epub';
   const testEpubTitle = 'My title';
+  const testSectionBody = '<h1>Hello world</h1>\n    <p>Hi</p>';
   const testSectionFilename = 'first-section.xhtml';
   const testSectionTitle = 'First section';
 
@@ -41,8 +43,7 @@ describe('Minimal EPUB', () => {
 
   test('Add section', () => {
     epub.addSection({
-      body: `<h1>Hello world</h1>
-             <p>Hi</p>`,
+      body: testSectionBody,
       filename: testSectionFilename,
       title: testSectionTitle,
     });
@@ -124,6 +125,25 @@ describe('Minimal EPUB', () => {
     <itemref idref="${testSectionFilename}"/>
   </spine>
 </package>`
+    );
+  });
+
+  test('Validate section', async () => {
+    expect(
+      await getFileContentFromZip(
+        zipReader,
+        `EPUB/xhtml/${testSectionFilename}`
+      )
+    ).toEqual(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>${testSectionTitle}</title>
+  </head>
+  <body>
+    ${testSectionBody}
+  </body>
+</html>`
     );
   });
 

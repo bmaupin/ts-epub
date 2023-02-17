@@ -59,8 +59,14 @@ export default class Epub {
     this.sections.push(section);
   }
 
-  async write(): Promise<Blob> {
+  /**
+   * Write the assembled EPUB.
+   *
+   * @param validateSections Whether or not to validate and prettify the XML in the body of each section.
+   * @returns The assembled EPUB.
+   */
+  async write(validateSections = true): Promise<Blob> {
     const epubWriter = new EpubWriter(this);
-    return epubWriter.write();
+    return epubWriter.write(validateSections);
   }
 }
