@@ -56,18 +56,6 @@ export default class EpubWriter {
     );
   }
 
-  static async prettifyXml(sourceXml: string): Promise<string> {
-    const parsedXml = await xml2js.parseStringPromise(sourceXml);
-
-    // xml2js adds 'standalone="yes"' to the XML header. It's not a big deal, but to keep
-    // things to a minimum, add the header manually
-    const xmlHeader = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    const builder = new xml2js.Builder({
-      headless: true,
-    });
-    return `${xmlHeader}${builder.buildObject(parsedXml)}`;
-  }
-
   private async writePackageOpf(zipWriter: ZipWriter<Blob>): Promise<void> {
     let creatorElement = '';
     if (this.epub.options.author) {
@@ -109,7 +97,7 @@ export default class EpubWriter {
 
     await zipWriter.add(
       path.join(INTERNAL_EPUB_DIRECTORY, 'package.opf'),
-      new TextReader(packageOpfContent)
+      new TextReader(await EpubWriter.prettifyXml(packageOpfContent))
     );
   }
 
@@ -130,7 +118,6 @@ export default class EpubWriter {
     }
 
     const navXhtmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE html>
     <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
       <head>
         <title>${this.epub.options.title}</title>
@@ -147,7 +134,7 @@ export default class EpubWriter {
 
     await zipWriter.add(
       path.join(INTERNAL_EPUB_DIRECTORY, 'nav.xhtml'),
-      new TextReader(navXhtmlContent)
+      new TextReader(await EpubWriter.prettifyXml(navXhtmlContent))
     );
   }
 
@@ -156,7 +143,6 @@ export default class EpubWriter {
 
     for (const section of this.epub.sections) {
       const sectionContent = `<?xml version="1.0" encoding="UTF-8"?>
-      <!DOCTYPE html>
       <html xmlns="http://www.w3.org/1999/xhtml">
         <head>
           <title>${section.title}</title>
@@ -175,5 +161,17 @@ export default class EpubWriter {
         new TextReader(sectionContent)
       );
     }
+  }
+
+  static async prettifyXml(sourceXml: string): Promise<string> {
+    const parsedXml = await xml2js.parseStringPromise(sourceXml);
+
+    // xml2js adds 'standalone="yes"' to the XML header. It's not a big deal, but to keep
+    // things to a minimum, add the header manually
+    const xmlHeader = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    const builder = new xml2js.Builder({
+      headless: true,
+    });
+    return `${xmlHeader}${builder.buildObject(parsedXml)}`;
   }
 }
