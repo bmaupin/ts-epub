@@ -128,6 +128,28 @@ describe('Minimal EPUB', () => {
     );
   });
 
+  test('Validate toc.ncx', async () => {
+    expect(await getFileContentFromZip(zipReader, 'EPUB/toc.ncx')).toEqual(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <head>
+    <meta name="dtb:uid" content="${testEpubId}"/>
+  </head>
+  <docTitle>
+    <text>${testEpubTitle}</text>
+  </docTitle>
+  <navMap>
+    <navPoint id="navPoint-1">
+      <navLabel>
+        <text>${testSectionTitle}</text>
+      </navLabel>
+      <content src="xhtml/${testSectionFilename}"/>
+    </navPoint>
+  </navMap>
+</ncx>`
+    );
+  });
+
   test('Validate section', async () => {
     expect(
       await getFileContentFromZip(

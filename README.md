@@ -8,7 +8,7 @@
    1. [x] Get epubcheck validation test working
 1. [ ] Add essential features
    1. [x] Prettify XML source
-   1. [ ] EPUBv2 TOC
+   1. [x] EPUBv2 TOC
    1. [x] Author
    1. [ ] Default CSS
    1. [ ] Exclude section from TOC

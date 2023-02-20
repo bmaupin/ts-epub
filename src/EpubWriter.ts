@@ -25,6 +25,7 @@ export default class EpubWriter {
     await this.writeContainerXml(zipWriter);
     await this.writePackageOpf(zipWriter);
     await this.writeNavXhtml(zipWriter);
+    await this.writeTocNcx(zipWriter);
     await this.writeSections(zipWriter, validateSections);
 
     await zipWriter.close();
@@ -46,7 +47,7 @@ export default class EpubWriter {
     const containerXmlContent = `<?xml version="1.0" encoding="UTF-8"?>
     <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
       <rootfiles>
-        <rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml" />
+        <rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/>
       </rootfiles>
     </container>`;
 
@@ -72,9 +73,9 @@ export default class EpubWriter {
         `<item id="${section.filename}" href="${path.join(
           INTERNAL_XHTML_DIRECTORY,
           section.filename
-        )}" media-type="application/xhtml+xml" />`
+        )}" media-type="application/xhtml+xml"/>`
       );
-      spineElements.push(`<itemref idref="${section.filename}" />`);
+      spineElements.push(`<itemref idref="${section.filename}"/>`);
     }
 
     const packageOpfContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -87,13 +88,13 @@ export default class EpubWriter {
         <meta property="dcterms:modified">${EpubWriter.generateIsoDateWithoutMilliseconds()}</meta>
       </metadata>
       <manifest>
-        <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav" />
+        <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
         ${manifestElements}
       </manifest>
       <spine>
         ${spineElements}
       </spine>
-    </package>\n`;
+    </package>`;
 
     await zipWriter.add(
       path.join(INTERNAL_EPUB_DIRECTORY, 'package.opf'),
@@ -130,11 +131,47 @@ export default class EpubWriter {
           </ol>
         </nav>
       </body>
-    </html>\n`;
+    </html>`;
 
     await zipWriter.add(
       path.join(INTERNAL_EPUB_DIRECTORY, 'nav.xhtml'),
       new TextReader(await EpubWriter.prettifyXml(navXhtmlContent))
+    );
+  }
+
+  private async writeTocNcx(zipWriter: ZipWriter<Blob>): Promise<void> {
+    const navPoints = [];
+
+    for (const [i, section] of this.epub.sections.entries()) {
+      navPoints.push(
+        `<navPoint id="navPoint-${i + 1}">
+          <navLabel>
+            <text>${section.title}</text>
+          </navLabel>
+          <content src="${path.join(
+            INTERNAL_XHTML_DIRECTORY,
+            section.filename
+          )}"/>
+        </navPoint>`
+      );
+    }
+
+    const tocNcxContent = `<?xml version="1.0" encoding="UTF-8"?>
+    <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+      <head>
+        <meta name="dtb:uid" content="${this.epub.options.id}"/>
+      </head>
+      <docTitle>
+        <text>${this.epub.options.title}</text>
+      </docTitle>
+      <navMap>
+        ${navPoints}
+      </navMap>
+    </ncx>`;
+
+    await zipWriter.add(
+      path.join(INTERNAL_EPUB_DIRECTORY, 'toc.ncx'),
+      new TextReader(await EpubWriter.prettifyXml(tocNcxContent))
     );
   }
 
