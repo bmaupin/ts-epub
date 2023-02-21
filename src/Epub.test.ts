@@ -8,9 +8,6 @@ import { beforeAll, describe, expect, test, vi } from 'vitest';
 
 import Epub from './Epub';
 
-// TODO: figure out how to test individual features; test them all in one full-featured suite? or one by one?
-// TODO: delete test files
-
 // Without this, tests fail with "TypeError: blob.arrayBuffer is not a function"
 globalThis.Blob = Blob;
 
@@ -21,6 +18,8 @@ const testEpubTitle = 'My title';
 const testSectionBody = '<h1>Hello world</h1>\n    <p>Hi</p>';
 const testSectionFilename = 'first-section.xhtml';
 const testSectionTitle = 'First section';
+
+// TODO: delete test files
 
 describe('Minimal EPUB', () => {
   const testEpubFilename = 'minimal.epub';
@@ -170,9 +169,7 @@ describe('Minimal EPUB', () => {
   });
 
   test('Validate EPUB using epubcheck', async () => {
-    const isEpubcheckAvailable = await isCommandAvailable('epubcheck');
-
-    if (isEpubcheckAvailable) {
+    if (await isCommandAvailable('epubcheck')) {
       // This syntax has to be used to avoid vitest from exiting with "Unhandled rejection"
       await expect(
         runCommand('epubcheck', [testEpubFilename])
@@ -184,6 +181,9 @@ describe('Minimal EPUB', () => {
 describe('Full-featured EPUB', () => {
   const testEpubAuthor = 'Sequester Grundelplith';
   const testEpubFilename = 'full.epub';
+  const testSection2Body = '<p><b>Bold choice</b></p>';
+  const testSection2Filename = 'second-section.xhtml';
+  const testSection2Title = 'Next section';
 
   let epub: Epub;
   let epubBlob: Blob;
@@ -198,15 +198,16 @@ describe('Full-featured EPUB', () => {
     });
   });
 
-  test('Create new Epub', () => {
-    expect(epub).toBeInstanceOf(Epub);
-  });
-
-  test('Add section', () => {
+  test('Add sections', () => {
     epub.addSection({
       body: testSectionBody,
       filename: testSectionFilename,
       title: testSectionTitle,
+    });
+    epub.addSection({
+      body: testSection2Body,
+      filename: testSection2Filename,
+      title: testSection2Title,
     });
   });
 
@@ -242,18 +243,70 @@ describe('Full-featured EPUB', () => {
   <manifest>
     <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
     <item id="${testSectionFilename}" href="xhtml/${testSectionFilename}" media-type="application/xhtml+xml"/>
+    <item id="${testSection2Filename}" href="xhtml/${testSection2Filename}" media-type="application/xhtml+xml"/>
   </manifest>
   <spine>
     <itemref idref="${testSectionFilename}"/>
+    <itemref idref="${testSection2Filename}"/>
   </spine>
 </package>`
     );
   });
 
-  test('Validate EPUB using epubcheck', async () => {
-    const isEpubcheckAvailable = await isCommandAvailable('epubcheck');
+  test('Validate nav.xml', async () => {
+    expect(await getFileContentFromZip(zipReader, 'EPUB/nav.xhtml')).toEqual(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+  <head>
+    <title>${testEpubTitle}</title>
+  </head>
+  <body>
+    <nav epub:type="toc">
+      <h1>Table of Contents</h1>
+      <ol>
+        <li>
+          <a href="xhtml/${testSectionFilename}">${testSectionTitle}</a>
+        </li>
+        <li>
+          <a href="xhtml/${testSection2Filename}">${testSection2Title}</a>
+        </li>
+      </ol>
+    </nav>
+  </body>
+</html>`
+    );
+  });
 
-    if (isEpubcheckAvailable) {
+  test('Validate toc.ncx', async () => {
+    expect(await getFileContentFromZip(zipReader, 'EPUB/toc.ncx')).toEqual(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <head>
+    <meta name="dtb:uid" content="${testEpubId}"/>
+  </head>
+  <docTitle>
+    <text>${testEpubTitle}</text>
+  </docTitle>
+  <navMap>
+    <navPoint id="navPoint-1">
+      <navLabel>
+        <text>${testSectionTitle}</text>
+      </navLabel>
+      <content src="xhtml/${testSectionFilename}"/>
+    </navPoint>
+    <navPoint id="navPoint-2">
+      <navLabel>
+        <text>${testSection2Title}</text>
+      </navLabel>
+      <content src="xhtml/${testSection2Filename}"/>
+    </navPoint>
+  </navMap>
+</ncx>`
+    );
+  });
+
+  test('Validate EPUB using epubcheck', async () => {
+    if (await isCommandAvailable('epubcheck')) {
       // This syntax has to be used to avoid vitest from exiting with "Unhandled rejection"
       await expect(
         runCommand('epubcheck', [testEpubFilename])

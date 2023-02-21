@@ -7,8 +7,6 @@ import Epub from './Epub';
 const INTERNAL_EPUB_DIRECTORY = 'EPUB';
 const INTERNAL_XHTML_DIRECTORY = 'xhtml';
 
-// TODO: prettify/validate all XML
-
 export default class EpubWriter {
   private epub: Epub;
 
@@ -89,10 +87,10 @@ export default class EpubWriter {
       </metadata>
       <manifest>
         <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
-        ${manifestElements}
+        ${manifestElements.join('\n')}
       </manifest>
       <spine>
-        ${spineElements}
+        ${spineElements.join('\n')}
       </spine>
     </package>`;
 
@@ -127,7 +125,7 @@ export default class EpubWriter {
         <nav epub:type="toc">
           <h1>Table of Contents</h1>
           <ol>
-            ${liElements}
+            ${liElements.join('\n')}
           </ol>
         </nav>
       </body>
@@ -165,7 +163,7 @@ export default class EpubWriter {
         <text>${this.epub.options.title}</text>
       </docTitle>
       <navMap>
-        ${navPoints}
+        ${navPoints.join('\n')}
       </navMap>
     </ncx>`;
 
