@@ -64,16 +64,16 @@ export default class EpubWriter {
     const manifestElements = [];
     const spineElements = [];
 
-    for (const section of this.epub.sections) {
+    for (const sectionOptions of this.epub.sectionsOptions) {
       // Use the section filename as the ID in the package.opf file, since we're already
       // checking that they're unique
       manifestElements.push(
-        `<item id="${section.filename}" href="${path.join(
+        `<item id="${sectionOptions.filename}" href="${path.join(
           INTERNAL_XHTML_DIRECTORY,
-          section.filename
+          sectionOptions.filename
         )}" media-type="application/xhtml+xml"/>`
       );
-      spineElements.push(`<itemref idref="${section.filename}"/>`);
+      spineElements.push(`<itemref idref="${sectionOptions.filename}"/>`);
     }
 
     const packageOpfContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -107,13 +107,15 @@ export default class EpubWriter {
   private async writeNavXhtml(zipWriter: ZipWriter<Blob>): Promise<void> {
     const liElements = [];
 
-    for (const section of this.epub.sections) {
-      liElements.push(
-        `<li><a href="${path.join(
-          INTERNAL_XHTML_DIRECTORY,
-          section.filename
-        )}">${section.title}</a></li>`
-      );
+    for (const sectionOptions of this.epub.sectionsOptions) {
+      if (!sectionOptions.excludeFromToc) {
+        liElements.push(
+          `<li><a href="${path.join(
+            INTERNAL_XHTML_DIRECTORY,
+            sectionOptions.filename
+          )}">${sectionOptions.title}</a></li>`
+        );
+      }
     }
 
     const navXhtmlContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -140,18 +142,20 @@ export default class EpubWriter {
   private async writeTocNcx(zipWriter: ZipWriter<Blob>): Promise<void> {
     const navPoints = [];
 
-    for (const [i, section] of this.epub.sections.entries()) {
-      navPoints.push(
-        `<navPoint id="navPoint-${i + 1}">
+    for (const [i, sectionOptions] of this.epub.sectionsOptions.entries()) {
+      if (!sectionOptions.excludeFromToc) {
+        navPoints.push(
+          `<navPoint id="navPoint-${i + 1}">
           <navLabel>
-            <text>${section.title}</text>
+            <text>${sectionOptions.title}</text>
           </navLabel>
           <content src="${path.join(
             INTERNAL_XHTML_DIRECTORY,
-            section.filename
+            sectionOptions.filename
           )}"/>
         </navPoint>`
-      );
+        );
+      }
     }
 
     const tocNcxContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -179,14 +183,14 @@ export default class EpubWriter {
   ): Promise<void> {
     // TODO: Test adding files concurrently (https://gildas-lormeau.github.io/zip.js/api/index.html#examples)
 
-    for (const section of this.epub.sections) {
+    for (const sectionOptions of this.epub.sectionsOptions) {
       const sectionContent = `<?xml version="1.0" encoding="UTF-8"?>
       <html xmlns="http://www.w3.org/1999/xhtml">
         <head>
-          <title>${section.title}</title>
+          <title>${sectionOptions.title}</title>
         </head>
         <body>
-          ${section.body}
+          ${sectionOptions.body}
         </body>
       </html>`;
 
@@ -194,7 +198,7 @@ export default class EpubWriter {
         path.join(
           INTERNAL_EPUB_DIRECTORY,
           INTERNAL_XHTML_DIRECTORY,
-          section.filename
+          sectionOptions.filename
         ),
         new TextReader(
           validateSections

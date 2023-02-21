@@ -16,7 +16,7 @@ const testEpubLanguage = 'en';
 const testEpubId = 'urn:uuid:38e9a65c-8077-45b7-a59e-8d0ae827ca5f';
 const testEpubTitle = 'My title';
 const testSectionBody = '<h1>Hello world</h1>\n    <p>Hi</p>';
-const testSectionFilename = 'first-section.xhtml';
+const testSectionFilename = 'section1.xhtml';
 const testSectionTitle = 'First section';
 
 // TODO: delete test files
@@ -182,8 +182,11 @@ describe('Full-featured EPUB', () => {
   const testEpubAuthor = 'Sequester Grundelplith';
   const testEpubFilename = 'full.epub';
   const testSection2Body = '<p><b>Bold choice</b></p>';
-  const testSection2Filename = 'second-section.xhtml';
+  const testSection2Filename = 'section2.xhtml';
   const testSection2Title = 'Next section';
+  const testSection3Body = '<p>This is a paragraph.</p>';
+  const testSection3Filename = 'section3.xhtml';
+  const testSection3Title = "I'm running out of ideas";
 
   let epub: Epub;
   let epubBlob: Blob;
@@ -208,6 +211,12 @@ describe('Full-featured EPUB', () => {
       body: testSection2Body,
       filename: testSection2Filename,
       title: testSection2Title,
+    });
+    epub.addSection({
+      body: testSection3Body,
+      excludeFromToc: true,
+      filename: testSection3Filename,
+      title: testSection3Title,
     });
   });
 
@@ -244,10 +253,12 @@ describe('Full-featured EPUB', () => {
     <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
     <item id="${testSectionFilename}" href="xhtml/${testSectionFilename}" media-type="application/xhtml+xml"/>
     <item id="${testSection2Filename}" href="xhtml/${testSection2Filename}" media-type="application/xhtml+xml"/>
+    <item id="${testSection3Filename}" href="xhtml/${testSection3Filename}" media-type="application/xhtml+xml"/>
   </manifest>
   <spine>
     <itemref idref="${testSectionFilename}"/>
     <itemref idref="${testSection2Filename}"/>
+    <itemref idref="${testSection3Filename}"/>
   </spine>
 </package>`
     );

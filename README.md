@@ -10,9 +10,9 @@
    1. [x] Prettify XML source
    1. [x] EPUBv2 TOC
    1. [x] Author
-   1. [ ] Default CSS
-   1. [ ] Exclude section from TOC
-   1. [ ] Cover
+   1. [ ] Custom CSS
+   1. [x] Exclude section from TOC
+   1. [ ] Ability to set cover
 1. [ ] Set up GitHub Actions
 1. [ ] Add remaining tests
    1. [x] Add per-file testing to full-featured EPUB tests
