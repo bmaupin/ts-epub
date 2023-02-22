@@ -24,6 +24,7 @@ export default class EpubWriter {
     await this.writePackageOpf(zipWriter);
     await this.writeNavXhtml(zipWriter);
     await this.writeTocNcx(zipWriter);
+    await this.writeCss(zipWriter);
     await this.writeSections(zipWriter, validateSections);
 
     await zipWriter.close();
@@ -64,9 +65,17 @@ export default class EpubWriter {
     const manifestElements = [];
     const spineElements = [];
 
+    for (const cssOptions of this.epub.cssOptions) {
+      // Use the filename as the ID in the package.opf file, since we're already
+      // checking that it's unique
+      manifestElements.push(
+        `<item id="${cssOptions.filename}" href="${path.join(
+          cssOptions.filename
+        )}" media-type="text/css"/>`
+      );
+    }
+
     for (const sectionOptions of this.epub.sectionsOptions) {
-      // Use the section filename as the ID in the package.opf file, since we're already
-      // checking that they're unique
       manifestElements.push(
         `<item id="${sectionOptions.filename}" href="${path.join(
           INTERNAL_XHTML_DIRECTORY,
@@ -177,6 +186,15 @@ export default class EpubWriter {
     );
   }
 
+  private async writeCss(zipWriter: ZipWriter<Blob>) {
+    for (const cssOptions of this.epub.cssOptions) {
+      await zipWriter.add(
+        path.join(INTERNAL_EPUB_DIRECTORY, cssOptions.filename),
+        new TextReader(cssOptions.content)
+      );
+    }
+  }
+
   private async writeSections(
     zipWriter: ZipWriter<Blob>,
     validateSections: boolean
@@ -184,10 +202,21 @@ export default class EpubWriter {
     // TODO: Test adding files concurrently (https://gildas-lormeau.github.io/zip.js/api/index.html#examples)
 
     for (const sectionOptions of this.epub.sectionsOptions) {
+      let cssLink;
+      if (sectionOptions.cssFilename) {
+        const cssOptions = this.epub.cssOptions.find(
+          (cssOptions) => cssOptions.filename === sectionOptions.cssFilename
+        );
+        if (cssOptions) {
+          cssLink = `<link rel="stylesheet" type="text/css" href="../${cssOptions.filename}" />`;
+        }
+      }
+
       const sectionContent = `<?xml version="1.0" encoding="UTF-8"?>
       <html xmlns="http://www.w3.org/1999/xhtml">
         <head>
           <title>${sectionOptions.title}</title>
+          ${cssLink ?? ''}
         </head>
         <body>
           ${sectionOptions.body}

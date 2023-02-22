@@ -1,5 +1,12 @@
 import EpubWriter from './EpubWriter';
 
+interface CssOptions {
+  /** Full content of the CSS file. The content will **not** be validated or formatted. */
+  content: string;
+  /** Filename to use inside the generated EPUB. Must be unique within the EPUB or an error will be thrown. */
+  filename: string;
+}
+
 /**
  * Options to provide when creating a new `Epub`.
  */
@@ -18,8 +25,10 @@ interface EpubOptions {
  * Options for a section in an EPUB.
  */
 interface EpubSectionOptions {
-  /** Content that will go between the `<body>` tags of the section XHTML file. The content will **not** be validated. */
+  /** Content that will go between the `<body>` tags of the section XHTML file. The content will be validated and formatted by default. */
   body: string;
+  /** Internal filename of a CSS file to apply to this section. */
+  cssFilename?: string;
   /** Exclude the section from the table of contents. Defaults to `false`. */
   excludeFromToc?: boolean;
   /** Filename to use inside the generated EPUB. Must be unique within the EPUB or an error will be thrown. */
@@ -29,6 +38,7 @@ interface EpubSectionOptions {
 }
 
 export default class Epub {
+  cssOptions: CssOptions[] = [];
   options: EpubOptions;
   sectionsOptions: EpubSectionOptions[] = [];
 
@@ -41,24 +51,36 @@ export default class Epub {
     this.options = options;
   }
 
+  addCSS(options: CssOptions): void {
+    if (
+      this.cssOptions.find(
+        (cssOptions) => cssOptions.filename === options.filename
+      )
+    ) {
+      throw new Error(`Duplicate CSS file name: ${options.filename}`);
+    }
+
+    this.cssOptions.push(options);
+  }
+
   /**
    * Add a new section to the EPUB.
    *
    * A section represents an individual XHTML file inside the EPUB. It often corresponds
    * to a chapter in a book.
    *
-   * @param {EpubSectionOptions} section The new section to add.
+   * @param {EpubSectionOptions} options The new section to add.
    */
-  addSection(section: EpubSectionOptions): void {
+  addSection(options: EpubSectionOptions): void {
     if (
       this.sectionsOptions.find(
-        (someSection) => someSection.filename === section.filename
+        (sectionOptions) => sectionOptions.filename === options.filename
       )
     ) {
-      throw new Error(`Duplicate section file name: ${section.filename}`);
+      throw new Error(`Duplicate section file name: ${options.filename}`);
     }
 
-    this.sectionsOptions.push(section);
+    this.sectionsOptions.push(options);
   }
 
   /**

@@ -179,6 +179,13 @@ describe('Minimal EPUB', () => {
 });
 
 describe('Full-featured EPUB', () => {
+  const testCssContent = `h1 {
+      text-align: center;
+    }
+    p {
+      font-family: sans-serif;
+    }`;
+  const testCssFilename = 'epub.css';
   const testEpubAuthor = 'Sequester Grundelplith';
   const testEpubFilename = 'full.epub';
   const testSection2Body = '<p><b>Bold choice</b></p>';
@@ -199,9 +206,12 @@ describe('Full-featured EPUB', () => {
       language: testEpubLanguage,
       title: testEpubTitle,
     });
-  });
 
-  test('Add sections', () => {
+    epub.addCSS({
+      content: testCssContent,
+      filename: testCssFilename,
+    });
+
     epub.addSection({
       body: testSectionBody,
       filename: testSectionFilename,
@@ -209,6 +219,7 @@ describe('Full-featured EPUB', () => {
     });
     epub.addSection({
       body: testSection2Body,
+      cssFilename: testCssFilename,
       filename: testSection2Filename,
       title: testSection2Title,
     });
@@ -251,6 +262,7 @@ describe('Full-featured EPUB', () => {
   </metadata>
   <manifest>
     <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="epub.css" href="${testCssFilename}" media-type="text/css"/>
     <item id="${testSectionFilename}" href="xhtml/${testSectionFilename}" media-type="application/xhtml+xml"/>
     <item id="${testSection2Filename}" href="xhtml/${testSection2Filename}" media-type="application/xhtml+xml"/>
     <item id="${testSection3Filename}" href="xhtml/${testSection3Filename}" media-type="application/xhtml+xml"/>
@@ -313,6 +325,53 @@ describe('Full-featured EPUB', () => {
     </navPoint>
   </navMap>
 </ncx>`
+    );
+  });
+
+  test('Validate CSS', async () => {
+    expect(
+      await getFileContentFromZip(zipReader, `EPUB/${testCssFilename}`)
+    ).toEqual(testCssContent);
+  });
+
+  test('Validate section with CSS', async () => {
+    expect(
+      await getFileContentFromZip(
+        zipReader,
+        `EPUB/xhtml/${testSection2Filename}`
+      )
+    ).toEqual(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>${testSection2Title}</title>
+    <link rel="stylesheet" type="text/css" href="../${testCssFilename}"/>
+  </head>
+  <body>
+    <p>
+      <b>Bold choice</b>
+    </p>
+  </body>
+</html>`
+    );
+  });
+
+  test('Validate section excluded from TOC', async () => {
+    expect(
+      await getFileContentFromZip(
+        zipReader,
+        `EPUB/xhtml/${testSection3Filename}`
+      )
+    ).toEqual(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>${testSection3Title}</title>
+  </head>
+  <body>
+    <p>This is a paragraph.</p>
+  </body>
+</html>`
     );
   });
 
