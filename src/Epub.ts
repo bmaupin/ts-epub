@@ -1,14 +1,20 @@
+import * as css from '@adobe/css-tools';
 import EpubWriter from './EpubWriter';
 
+/**
+ * Options for adding a CSS file to an EPUB.
+ */
 interface CssOptions {
-  /** Full content of the CSS file. The content will **not** be validated or formatted. */
+  /** Full content of the CSS file. The content will be validated and reformatted by default. */
   content: string;
   /** Filename to use inside the generated EPUB. Must be unique within the EPUB or an error will be thrown. */
   filename: string;
+  /** Whether or not to validate and reformat the CSS. Defaults to `true`. */
+  validate?: boolean;
 }
 
 /**
- * Options to provide when creating a new `Epub`.
+ * Options for creating a new `Epub`.
  */
 interface EpubOptions {
   /** EPUB author */
@@ -45,12 +51,20 @@ export default class Epub {
   /**
    * The constructor of the `Epub` class.
    *
-   * @param {EpubOptions} options Options to be used to create the EPUB.
+   * @param options Options to be used to create the EPUB.
    */
   constructor(options: EpubOptions) {
     this.options = options;
   }
 
+  /**
+   * Add a new CSS file to the EPUB.
+   *
+   * The filename of the CSS file can be provided to `addSection` to apply the CSS to the
+   * section.
+   *
+   * @param options Options for the CSS file.
+   */
   addCSS(options: CssOptions): void {
     if (
       this.cssOptions.find(
@@ -60,7 +74,19 @@ export default class Epub {
       throw new Error(`Duplicate CSS file name: ${options.filename}`);
     }
 
-    this.cssOptions.push(options);
+    let cssContent = options.content;
+    if (options.validate ?? true) {
+      try {
+        cssContent = Epub.validateAndPrettifyCss(options.content);
+      } catch (error) {
+        throw new Error(`Error validating CSS: ${error}`);
+      }
+    }
+
+    this.cssOptions.push({
+      ...options,
+      content: cssContent,
+    });
   }
 
   /**
@@ -69,7 +95,7 @@ export default class Epub {
    * A section represents an individual XHTML file inside the EPUB. It often corresponds
    * to a chapter in a book.
    *
-   * @param {EpubSectionOptions} options The new section to add.
+   * @param options Options for the section.
    */
   addSection(options: EpubSectionOptions): void {
     if (
@@ -92,5 +118,9 @@ export default class Epub {
   async write(validateSections = true): Promise<Blob> {
     const epubWriter = new EpubWriter(this);
     return epubWriter.write(validateSections);
+  }
+
+  private static validateAndPrettifyCss(sourceCss: string): string {
+    return css.stringify(css.parse(sourceCss));
   }
 }

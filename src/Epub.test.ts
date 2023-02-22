@@ -241,6 +241,15 @@ describe('Full-featured EPUB', () => {
     }).toThrow();
   });
 
+  test('Add invalid CSS', () => {
+    expect(() => {
+      epub.addCSS({
+        content: 'This is not valid CSS',
+        filename: "Shouldn't matter",
+      });
+    }).toThrow();
+  });
+
   test('Add duplicate XML', () => {
     expect(() => {
       epub.addSection({
@@ -349,9 +358,14 @@ describe('Full-featured EPUB', () => {
   });
 
   test('Validate CSS', async () => {
-    expect(
-      await getFileContentFromZip(zipReader, `EPUB/${testCssFilename}`)
-    ).toEqual(testCssContent);
+    expect(await getFileContentFromZip(zipReader, `EPUB/${testCssFilename}`))
+      .toEqual(`h1 {
+  text-align: center;
+}
+
+p {
+  font-family: sans-serif;
+}`);
   });
 
   test('Validate section with CSS', async () => {
