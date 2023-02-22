@@ -231,6 +231,26 @@ describe('Full-featured EPUB', () => {
     });
   });
 
+  test('Add duplicate CSS', () => {
+    // Function has to be wrapped in an IIFE for toThrow() to work 🤷
+    expect(() => {
+      epub.addCSS({
+        content: testCssContent,
+        filename: testCssFilename,
+      });
+    }).toThrow();
+  });
+
+  test('Add duplicate XML', () => {
+    expect(() => {
+      epub.addSection({
+        body: testSectionBody,
+        filename: testSectionFilename,
+        title: testSectionTitle,
+      });
+    }).toThrow();
+  });
+
   test('Write Epub', async () => {
     // Use a consistent timestamp for tests
     vi.setSystemTime(new Date(testDateString));
