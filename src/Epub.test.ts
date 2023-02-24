@@ -40,8 +40,8 @@ describe('Minimal EPUB', () => {
     expect(epub).toBeInstanceOf(Epub);
   });
 
-  test('Add section', () => {
-    epub.addSection({
+  test('Add section', async () => {
+    await epub.addSection({
       body: testSectionBody,
       filename: testSectionFilename,
       title: testSectionTitle,
@@ -199,7 +199,7 @@ describe('Full-featured EPUB', () => {
   let epubBlob: Blob;
   let zipReader: ZipReader<Blob>;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     epub = new Epub({
       author: testEpubAuthor,
       id: testEpubId,
@@ -212,18 +212,18 @@ describe('Full-featured EPUB', () => {
       filename: testCssFilename,
     });
 
-    epub.addSection({
+    await epub.addSection({
       body: testSectionBody,
       filename: testSectionFilename,
       title: testSectionTitle,
     });
-    epub.addSection({
+    await epub.addSection({
       body: testSection2Body,
       cssFilename: testCssFilename,
       filename: testSection2Filename,
       title: testSection2Title,
     });
-    epub.addSection({
+    await epub.addSection({
       body: testSection3Body,
       excludeFromToc: true,
       filename: testSection3Filename,
@@ -250,14 +250,24 @@ describe('Full-featured EPUB', () => {
     }).toThrow();
   });
 
-  test('Add duplicate XML', () => {
-    expect(() => {
+  test('Add duplicate section', async () => {
+    await expect(
       epub.addSection({
         body: testSectionBody,
         filename: testSectionFilename,
         title: testSectionTitle,
-      });
-    }).toThrow();
+      })
+    ).rejects.toThrow();
+  });
+
+  test('Add invalid section', async () => {
+    await expect(
+      epub.addSection({
+        body: '<p><p>This is not valid XML',
+        filename: "Shouldn't matter",
+        title: "Shouldn't matter either",
+      })
+    ).rejects.toThrow();
   });
 
   test('Write Epub', async () => {

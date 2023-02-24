@@ -1,5 +1,5 @@
-import * as css from '@adobe/css-tools';
 import EpubWriter from './EpubWriter';
+import { validateAndPrettifyCss, validateAndPrettifyXml } from './utils';
 
 /**
  * Options for adding a CSS file to an EPUB.
@@ -41,12 +41,14 @@ interface EpubSectionOptions {
   filename: string;
   /** Title of the section which will be used for the table of contents. */
   title: string;
+  /** Whether or not to validate and reformat the XML in the body. Defaults to `true`. */
+  validate?: boolean;
 }
 
 export default class Epub {
   cssOptions: CssOptions[] = [];
   options: EpubOptions;
-  sectionsOptions: EpubSectionOptions[] = [];
+  sectionsOptions: (EpubSectionOptions & { content: string })[] = [];
 
   /**
    * The constructor of the `Epub` class.
@@ -77,7 +79,7 @@ export default class Epub {
     let cssContent = options.content;
     if (options.validate ?? true) {
       try {
-        cssContent = Epub.validateAndPrettifyCss(options.content);
+        cssContent = validateAndPrettifyCss(options.content);
       } catch (error) {
         throw new Error(`Error validating CSS: ${error}`);
       }
@@ -97,7 +99,7 @@ export default class Epub {
    *
    * @param options Options for the section.
    */
-  addSection(options: EpubSectionOptions): void {
+  async addSection(options: EpubSectionOptions): Promise<void> {
     if (
       this.sectionsOptions.find(
         (sectionOptions) => sectionOptions.filename === options.filename
@@ -106,21 +108,51 @@ export default class Epub {
       throw new Error(`Duplicate section file name: ${options.filename}`);
     }
 
-    this.sectionsOptions.push(options);
+    // Build the full section XML right away that way we can validate it so the user will
+    // know immediately if the validation has failed, instead of waiting for when the EPUB
+    // file is packaged.
+    let cssLink;
+    if (options.cssFilename) {
+      const cssOptions = this.cssOptions.find(
+        (cssOptions) => cssOptions.filename === options.cssFilename
+      );
+      if (cssOptions) {
+        cssLink = `<link rel="stylesheet" type="text/css" href="../${cssOptions.filename}" />`;
+      }
+    }
+
+    let sectionContent = `<?xml version="1.0" encoding="UTF-8"?>
+    <html xmlns="http://www.w3.org/1999/xhtml">
+      <head>
+        <title>${options.title}</title>
+        ${cssLink ?? ''}
+      </head>
+      <body>
+        ${options.body}
+      </body>
+    </html>`;
+
+    if (options.validate ?? true) {
+      try {
+        sectionContent = await validateAndPrettifyXml(sectionContent);
+      } catch (error) {
+        throw new Error(`Error validating section content: ${error}`);
+      }
+    }
+
+    this.sectionsOptions.push({
+      ...options,
+      content: sectionContent,
+    });
   }
 
   /**
    * Write the assembled EPUB.
    *
-   * @param validateSections Whether or not to validate and prettify the XML in the body of each section.
    * @returns The assembled EPUB.
    */
-  async write(validateSections = true): Promise<Blob> {
+  async write(): Promise<Blob> {
     const epubWriter = new EpubWriter(this);
-    return epubWriter.write(validateSections);
-  }
-
-  private static validateAndPrettifyCss(sourceCss: string): string {
-    return css.stringify(css.parse(sourceCss));
+    return epubWriter.write();
   }
 }

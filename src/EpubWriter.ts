@@ -1,8 +1,8 @@
-import xml2js from 'isomorphic-xml2js';
 import path from 'path';
 import { BlobWriter, TextReader, ZipWriter } from '@zip.js/zip.js';
 
 import Epub from './Epub';
+import { validateAndPrettifyXml } from './utils';
 
 const INTERNAL_EPUB_DIRECTORY = 'EPUB';
 const INTERNAL_XHTML_DIRECTORY = 'xhtml';
@@ -14,7 +14,7 @@ export default class EpubWriter {
     this.epub = epub;
   }
 
-  async write(validateSections = true): Promise<Blob> {
+  async write(): Promise<Blob> {
     const zipFileWriter = new BlobWriter();
     const zipWriter = new ZipWriter(zipFileWriter);
 
@@ -25,7 +25,7 @@ export default class EpubWriter {
     await this.writeNavXhtml(zipWriter);
     await this.writeTocNcx(zipWriter);
     await this.writeCss(zipWriter);
-    await this.writeSections(zipWriter, validateSections);
+    await this.writeSections(zipWriter);
 
     await zipWriter.close();
 
@@ -52,7 +52,7 @@ export default class EpubWriter {
 
     await zipWriter.add(
       'META-INF/container.xml',
-      new TextReader(await EpubWriter.prettifyXml(containerXmlContent))
+      new TextReader(await validateAndPrettifyXml(containerXmlContent))
     );
   }
 
@@ -105,7 +105,7 @@ export default class EpubWriter {
 
     await zipWriter.add(
       path.join(INTERNAL_EPUB_DIRECTORY, 'package.opf'),
-      new TextReader(await EpubWriter.prettifyXml(packageOpfContent))
+      new TextReader(await validateAndPrettifyXml(packageOpfContent))
     );
   }
 
@@ -144,7 +144,7 @@ export default class EpubWriter {
 
     await zipWriter.add(
       path.join(INTERNAL_EPUB_DIRECTORY, 'nav.xhtml'),
-      new TextReader(await EpubWriter.prettifyXml(navXhtmlContent))
+      new TextReader(await validateAndPrettifyXml(navXhtmlContent))
     );
   }
 
@@ -182,7 +182,7 @@ export default class EpubWriter {
 
     await zipWriter.add(
       path.join(INTERNAL_EPUB_DIRECTORY, 'toc.ncx'),
-      new TextReader(await EpubWriter.prettifyXml(tocNcxContent))
+      new TextReader(await validateAndPrettifyXml(tocNcxContent))
     );
   }
 
@@ -195,62 +195,18 @@ export default class EpubWriter {
     }
   }
 
-  private async writeSections(
-    zipWriter: ZipWriter<Blob>,
-    validateSections: boolean
-  ): Promise<void> {
+  private async writeSections(zipWriter: ZipWriter<Blob>): Promise<void> {
     // TODO: Test adding files concurrently (https://gildas-lormeau.github.io/zip.js/api/index.html#examples)
 
     for (const sectionOptions of this.epub.sectionsOptions) {
-      let cssLink;
-      if (sectionOptions.cssFilename) {
-        const cssOptions = this.epub.cssOptions.find(
-          (cssOptions) => cssOptions.filename === sectionOptions.cssFilename
-        );
-        if (cssOptions) {
-          cssLink = `<link rel="stylesheet" type="text/css" href="../${cssOptions.filename}" />`;
-        }
-      }
-
-      const sectionContent = `<?xml version="1.0" encoding="UTF-8"?>
-      <html xmlns="http://www.w3.org/1999/xhtml">
-        <head>
-          <title>${sectionOptions.title}</title>
-          ${cssLink ?? ''}
-        </head>
-        <body>
-          ${sectionOptions.body}
-        </body>
-      </html>`;
-
       await zipWriter.add(
         path.join(
           INTERNAL_EPUB_DIRECTORY,
           INTERNAL_XHTML_DIRECTORY,
           sectionOptions.filename
         ),
-        new TextReader(
-          validateSections
-            ? await EpubWriter.prettifyXml(sectionContent)
-            : sectionContent
-        )
+        new TextReader(sectionOptions.content)
       );
     }
-  }
-
-  // This is primarily for prettifying the XML, which makes testing easier (we don't have
-  // to worry about whitespace for the XML templates) and also makes the final generated
-  // EPUB nicer. Because this has to parse the XML to prettify it, it also acts as a
-  // sanity check for ensuring the source is valid XML as it will throw an error if not.
-  static async prettifyXml(sourceXml: string): Promise<string> {
-    const parsedXml = await xml2js.parseStringPromise(sourceXml);
-
-    // xml2js adds 'standalone="yes"' to the XML header. It's not a big deal, but to keep
-    // things to a minimum, add the header manually
-    const xmlHeader = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    const builder = new xml2js.Builder({
-      headless: true,
-    });
-    return `${xmlHeader}${builder.buildObject(parsedXml)}`;
   }
 }
