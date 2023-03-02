@@ -46,7 +46,7 @@ export default class EpubWriter {
     const containerXmlContent = `<?xml version="1.0" encoding="UTF-8"?>
     <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
       <rootfiles>
-        <rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/>
+        <rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml" />
       </rootfiles>
     </container>`;
 
@@ -71,7 +71,7 @@ export default class EpubWriter {
       manifestElements.push(
         `<item id="${cssOptions.filename}" href="${path.join(
           cssOptions.filename
-        )}" media-type="text/css"/>`
+        )}" media-type="text/css" />`
       );
     }
 
@@ -80,9 +80,9 @@ export default class EpubWriter {
         `<item id="${sectionOptions.filename}" href="${path.join(
           INTERNAL_XHTML_DIRECTORY,
           sectionOptions.filename
-        )}" media-type="application/xhtml+xml"/>`
+        )}" media-type="application/xhtml+xml" />`
       );
-      spineElements.push(`<itemref idref="${sectionOptions.filename}"/>`);
+      spineElements.push(`<itemref idref="${sectionOptions.filename}" />`);
     }
 
     const packageOpfContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -95,10 +95,11 @@ export default class EpubWriter {
         <meta property="dcterms:modified">${EpubWriter.generateIsoDateWithoutMilliseconds()}</meta>
       </metadata>
       <manifest>
-        <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+        <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav" />
+        <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml" />
         ${manifestElements.join('\n')}
       </manifest>
-      <spine>
+      <spine toc="ncx">
         ${spineElements.join('\n')}
       </spine>
     </package>`;
@@ -161,7 +162,7 @@ export default class EpubWriter {
           <content src="${path.join(
             INTERNAL_XHTML_DIRECTORY,
             sectionOptions.filename
-          )}"/>
+          )}" />
         </navPoint>`
         );
       }
@@ -170,7 +171,7 @@ export default class EpubWriter {
     const tocNcxContent = `<?xml version="1.0" encoding="UTF-8"?>
     <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
       <head>
-        <meta name="dtb:uid" content="${this.epub.options.id}"/>
+        <meta name="dtb:uid" content="${this.epub.options.id}" />
       </head>
       <docTitle>
         <text>${this.epub.options.title}</text>

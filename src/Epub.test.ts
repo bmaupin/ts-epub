@@ -97,9 +97,10 @@ describe('Minimal EPUB', () => {
   </metadata>
   <manifest>
     <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
     <item id="${testSectionFilename}" href="xhtml/${testSectionFilename}" media-type="application/xhtml+xml"/>
   </manifest>
-  <spine>
+  <spine toc="ncx">
     <itemref idref="${testSectionFilename}"/>
   </spine>
 </package>`
@@ -301,12 +302,13 @@ describe('Full-featured EPUB', () => {
   </metadata>
   <manifest>
     <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
     <item id="epub.css" href="${testCssFilename}" media-type="text/css"/>
     <item id="${testSectionFilename}" href="xhtml/${testSectionFilename}" media-type="application/xhtml+xml"/>
     <item id="${testSection2Filename}" href="xhtml/${testSection2Filename}" media-type="application/xhtml+xml"/>
     <item id="${testSection3Filename}" href="xhtml/${testSection3Filename}" media-type="application/xhtml+xml"/>
   </manifest>
-  <spine>
+  <spine toc="ncx">
     <itemref idref="${testSectionFilename}"/>
     <itemref idref="${testSection2Filename}"/>
     <itemref idref="${testSection3Filename}"/>
