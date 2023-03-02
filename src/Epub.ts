@@ -99,7 +99,7 @@ export default class Epub {
    *
    * @param options Options for the section.
    */
-  async addSection(options: EpubSectionOptions): Promise<void> {
+  addSection(options: EpubSectionOptions): void {
     if (
       this.sectionsOptions.find(
         (sectionOptions) => sectionOptions.filename === options.filename
@@ -134,7 +134,7 @@ export default class Epub {
 
     if (options.validate ?? true) {
       try {
-        sectionContent = await validateAndPrettifyXml(sectionContent);
+        sectionContent = validateAndPrettifyXml(sectionContent);
       } catch (error) {
         throw new Error(`Error validating section content: ${error}`);
       }

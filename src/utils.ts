@@ -1,24 +1,29 @@
 import * as css from '@adobe/css-tools';
-import xml2js from 'isomorphic-xml2js';
+import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 
 export const validateAndPrettifyCss = (sourceCss: string): string => {
   return css.stringify(css.parse(sourceCss));
 };
 
-// This is primarily for prettifying the XML, which makes testing easier (we don't have
-// to worry about whitespace for the XML templates) and also makes the final generated
-// EPUB nicer. Because this has to parse the XML to prettify it, it also acts as a
-// sanity check for ensuring the source is valid XML as it will throw an error if not.
-export const validateAndPrettifyXml = async (
-  sourceXml: string
-): Promise<string> => {
-  const parsedXml = await xml2js.parseStringPromise(sourceXml);
-
-  // xml2js adds 'standalone="yes"' to the XML header. It's not a big deal, but to keep
-  // things to a minimum, add the header manually
-  const xmlHeader = '<?xml version="1.0" encoding="UTF-8"?>\n';
-  const builder = new xml2js.Builder({
-    headless: true,
+export const validateAndPrettifyXml = (sourceXml: string): string => {
+  const parser = new XMLParser({
+    // The default behaviour is to strip XML attributes 🤔 This option must be used in the
+    // parser and the builder
+    ignoreAttributes: false,
+    // This seems to strip the newline from the end of the XML. This option must be used
+    // in the parser and the builder
+    preserveOrder: true,
   });
-  return `${xmlHeader}${builder.buildObject(parsedXml)}`;
+  // The second parameter will cause the parser to throw if there's a validation error
+  const parsedXml = parser.parse(sourceXml, true);
+
+  const builder = new XMLBuilder({
+    // The default is to output the XML with all whitespace between tags removed
+    format: true,
+    ignoreAttributes: false,
+    preserveOrder: true,
+    // This prevents self-closing tags from being converted
+    suppressEmptyNode: true,
+  });
+  return builder.build(parsedXml);
 };

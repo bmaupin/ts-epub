@@ -52,7 +52,7 @@ export default class EpubWriter {
 
     await zipWriter.add(
       'META-INF/container.xml',
-      new TextReader(await validateAndPrettifyXml(containerXmlContent))
+      new TextReader(validateAndPrettifyXml(containerXmlContent))
     );
   }
 
@@ -105,7 +105,7 @@ export default class EpubWriter {
 
     await zipWriter.add(
       path.join(INTERNAL_EPUB_DIRECTORY, 'package.opf'),
-      new TextReader(await validateAndPrettifyXml(packageOpfContent))
+      new TextReader(validateAndPrettifyXml(packageOpfContent))
     );
   }
 
@@ -144,7 +144,7 @@ export default class EpubWriter {
 
     await zipWriter.add(
       path.join(INTERNAL_EPUB_DIRECTORY, 'nav.xhtml'),
-      new TextReader(await validateAndPrettifyXml(navXhtmlContent))
+      new TextReader(validateAndPrettifyXml(navXhtmlContent))
     );
   }
 
@@ -182,7 +182,7 @@ export default class EpubWriter {
 
     await zipWriter.add(
       path.join(INTERNAL_EPUB_DIRECTORY, 'toc.ncx'),
-      new TextReader(await validateAndPrettifyXml(tocNcxContent))
+      new TextReader(validateAndPrettifyXml(tocNcxContent))
     );
   }
 

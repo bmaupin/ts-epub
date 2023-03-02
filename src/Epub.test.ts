@@ -41,7 +41,7 @@ describe('Minimal EPUB', () => {
   });
 
   test('Add section', async () => {
-    await epub.addSection({
+    epub.addSection({
       body: testSectionBody,
       filename: testSectionFilename,
       title: testSectionTitle,
@@ -212,18 +212,18 @@ describe('Full-featured EPUB', () => {
       filename: testCssFilename,
     });
 
-    await epub.addSection({
+    epub.addSection({
       body: testSectionBody,
       filename: testSectionFilename,
       title: testSectionTitle,
     });
-    await epub.addSection({
+    epub.addSection({
       body: testSection2Body,
       cssFilename: testCssFilename,
       filename: testSection2Filename,
       title: testSection2Title,
     });
-    await epub.addSection({
+    epub.addSection({
       body: testSection3Body,
       excludeFromToc: true,
       filename: testSection3Filename,
@@ -251,23 +251,23 @@ describe('Full-featured EPUB', () => {
   });
 
   test('Add duplicate section', async () => {
-    await expect(
+    expect(() => {
       epub.addSection({
         body: testSectionBody,
         filename: testSectionFilename,
         title: testSectionTitle,
-      })
-    ).rejects.toThrow();
+      });
+    }).toThrow();
   });
 
   test('Add invalid section', async () => {
-    await expect(
+    expect(() => {
       epub.addSection({
         body: '<p><p>This is not valid XML',
         filename: "Shouldn't matter",
         title: "Shouldn't matter either",
-      })
-    ).rejects.toThrow();
+      });
+    }).toThrow();
   });
 
   test('Write Epub', async () => {
@@ -410,7 +410,7 @@ p {
       `<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <title>${testSection3Title}</title>
+    <title>I&apos;m running out of ideas</title>
   </head>
   <body>
     <p>This is a paragraph.</p>
