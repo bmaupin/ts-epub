@@ -423,7 +423,7 @@ p {
     if (await isCommandAvailable('epubcheck')) {
       // This syntax has to be used to avoid vitest from exiting with "Unhandled rejection"
       await expect(
-        runCommand('epubcheck', [testEpubFilename])
+        runCommand('epubcheck', ['--failonwarnings', testEpubFilename])
       ).resolves.toEqual(0);
     }
   });
