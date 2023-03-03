@@ -18,10 +18,8 @@
     "@types/node": "^18.13.0",
     "@typescript-eslint/eslint-plugin": "^5.51.0",
     "@typescript-eslint/parser": "^5.51.0",
-    "blob-polyfill": "^7.0.20220408",
     "eslint": "^8.33.0",
     "hasbin": "^1.2.3",
-    "jsdom": "^21.1.0",
     "typescript": "^4.9.5",
     "vitest": "^0.28.4"
   }

@@ -1,15 +1,10 @@
 import { BlobReader, TextWriter, ZipReader } from '@zip.js/zip.js';
-// @ts-expect-error: This is just for tests to work around "TypeError: blob.arrayBuffer is not a function"
-import { Blob } from 'blob-polyfill';
 import { spawn } from 'child_process';
 import { access, writeFile } from 'fs/promises';
 import hasbin from 'hasbin';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
 
 import Epub from './Epub';
-
-// Without this, tests fail with "TypeError: blob.arrayBuffer is not a function"
-globalThis.Blob = Blob;
 
 const testDateString = '2023-02-16T18:35:03Z';
 const testEpubLanguage = 'en';
