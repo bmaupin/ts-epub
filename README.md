@@ -12,6 +12,7 @@
    1. [x] Author
    1. [x] Custom CSS
    1. [x] Exclude section from TOC
+   1. [x] Add images
    1. [ ] Ability to set cover
 1. [x] Format CSS content
 1. [ ] Set up GitHub Actions
@@ -27,5 +28,4 @@
 #### Later
 
 - [ ] Add fonts
-- [ ] Add images
 - [ ] Add subsections

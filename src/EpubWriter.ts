@@ -1,5 +1,6 @@
+import { fileTypeFromBuffer } from 'file-type';
 import path from 'path';
-import { BlobWriter, TextReader, ZipWriter } from '@zip.js/zip.js';
+import { BlobReader, BlobWriter, TextReader, ZipWriter } from '@zip.js/zip.js';
 
 import Epub from './Epub';
 import { validateAndPrettifyXml } from './utils';
@@ -25,6 +26,7 @@ export default class EpubWriter {
     await this.writeNavXhtml(zipWriter);
     await this.writeTocNcx(zipWriter);
     await this.writeCss(zipWriter);
+    await this.writeImages(zipWriter);
     await this.writeSections(zipWriter);
 
     await zipWriter.close();
@@ -72,6 +74,29 @@ export default class EpubWriter {
         `<item id="${cssOptions.filename}" href="${path.join(
           cssOptions.filename
         )}" media-type="text/css" />`
+      );
+    }
+
+    for (const imageOptions of this.epub.imagesOptions) {
+      const fileType = await fileTypeFromBuffer(
+        await imageOptions.image.arrayBuffer()
+      );
+
+      /*
+       * TODO: fileType could be undefined if file-type can't identify the file type
+       * Ideas:
+       *   - do nothing
+       *   - throw an error here
+       *   - add a `validate` parameter and only throw an error if `validate` is true
+       *   - better yet, add a `validate` parameter and throw in addImage
+       *     - but this will require addImage to be async ...
+       *       - we could just make all add* methods async, which would give us potential future flexibility for changing validation libraries, but this feels like overkill
+       */
+
+      manifestElements.push(
+        `<item id="${imageOptions.filename}" href="${path.join(
+          imageOptions.filename
+        )}" media-type="${fileType?.mime}" />`
       );
     }
 
@@ -192,6 +217,15 @@ export default class EpubWriter {
       await zipWriter.add(
         path.join(INTERNAL_EPUB_DIRECTORY, cssOptions.filename),
         new TextReader(cssOptions.content)
+      );
+    }
+  }
+
+  private async writeImages(zipWriter: ZipWriter<Blob>) {
+    for (const imageOptions of this.epub.imagesOptions) {
+      await zipWriter.add(
+        path.join(INTERNAL_EPUB_DIRECTORY, imageOptions.filename),
+        new BlobReader(imageOptions.image)
       );
     }
   }

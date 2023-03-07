@@ -11,6 +11,7 @@
     "@adobe/css-tools": "^4.2.0",
     "@zip.js/zip.js": "^2.6.63",
     "fast-xml-parser": "^4.1.2",
+    "file-type": "^18.2.1",
     "path-browserify": "^1.0.1"
   },
   "devDependencies": {

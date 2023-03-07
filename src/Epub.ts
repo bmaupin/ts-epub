@@ -45,10 +45,21 @@ interface EpubSectionOptions {
   validate?: boolean;
 }
 
+interface ImageOptions {
+  /** Filename to use inside the generated EPUB. Must be unique within the EPUB or an error will be thrown. */
+  filename: string;
+  /** The image to add */
+  image: Blob;
+}
+
 export default class Epub {
+  // TODO: these are akwardly named, can we rename them? cssToAdd/imagesToAdd?
   cssOptions: CssOptions[] = [];
+  imagesOptions: ImageOptions[] = [];
   options: EpubOptions;
-  sectionsOptions: (EpubSectionOptions & { content: string })[] = [];
+  sectionsOptions: (EpubSectionOptions & {
+    content: string;
+  })[] = [];
 
   /**
    * The constructor of the `Epub` class.
@@ -89,6 +100,18 @@ export default class Epub {
       ...options,
       content: cssContent,
     });
+  }
+
+  addImage(options: ImageOptions): void {
+    if (
+      this.imagesOptions.find(
+        (imageOptions) => imageOptions.filename === options.filename
+      )
+    ) {
+      throw new Error(`Duplicate image file name: ${options.filename}`);
+    }
+
+    this.imagesOptions.push(options);
   }
 
   /**

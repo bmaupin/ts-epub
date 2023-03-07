@@ -1,7 +1,8 @@
-import { BlobReader, TextWriter, ZipReader } from '@zip.js/zip.js';
+import { BlobReader, BlobWriter, TextWriter, ZipReader } from '@zip.js/zip.js';
 import { spawn } from 'child_process';
-import { access, writeFile } from 'fs/promises';
+import { access, readFile, writeFile } from 'node:fs/promises';
 import hasbin from 'hasbin';
+import { resolve } from 'node:path';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
 
 import Epub from './Epub';
@@ -62,14 +63,14 @@ describe('Minimal EPUB', () => {
   });
 
   test('Validate mimetype', async () => {
-    expect(await getFileContentFromZip(zipReader, 'mimetype')).toEqual(
+    expect(await getStringContentFromZip(zipReader, 'mimetype')).toEqual(
       `application/epub+zip`
     );
   });
 
   test('Validate container.xml', async () => {
     expect(
-      await getFileContentFromZip(zipReader, 'META-INF/container.xml')
+      await getStringContentFromZip(zipReader, 'META-INF/container.xml')
     ).toEqual(
       `<?xml version="1.0" encoding="UTF-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -81,7 +82,9 @@ describe('Minimal EPUB', () => {
   });
 
   test('Validate package.opf', async () => {
-    expect(await getFileContentFromZip(zipReader, 'EPUB/package.opf')).toEqual(
+    expect(
+      await getStringContentFromZip(zipReader, 'EPUB/package.opf')
+    ).toEqual(
       `<?xml version="1.0" encoding="UTF-8"?>
 <package version="3.0" unique-identifier="pub-id" xmlns="http://www.idpf.org/2007/opf">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -103,7 +106,7 @@ describe('Minimal EPUB', () => {
   });
 
   test('Validate nav.xml', async () => {
-    expect(await getFileContentFromZip(zipReader, 'EPUB/nav.xhtml')).toEqual(
+    expect(await getStringContentFromZip(zipReader, 'EPUB/nav.xhtml')).toEqual(
       `<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
   <head>
@@ -124,7 +127,7 @@ describe('Minimal EPUB', () => {
   });
 
   test('Validate toc.ncx', async () => {
-    expect(await getFileContentFromZip(zipReader, 'EPUB/toc.ncx')).toEqual(
+    expect(await getStringContentFromZip(zipReader, 'EPUB/toc.ncx')).toEqual(
       `<?xml version="1.0" encoding="UTF-8"?>
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
   <head>
@@ -147,7 +150,7 @@ describe('Minimal EPUB', () => {
 
   test('Validate section', async () => {
     expect(
-      await getFileContentFromZip(
+      await getStringContentFromZip(
         zipReader,
         `EPUB/xhtml/${testSectionFilename}`
       )
@@ -184,6 +187,7 @@ describe('Full-featured EPUB', () => {
   const testCssFilename = 'epub.css';
   const testEpubAuthor = 'Sequester Grundelplith';
   const testEpubFilename = 'full.epub';
+  const testImageFilename = 'test-image.png';
   const testSection2Body = '<p><b>Bold choice</b></p>';
   const testSection2Filename = 'section2.xhtml';
   const testSection2Title = 'Next section';
@@ -193,6 +197,7 @@ describe('Full-featured EPUB', () => {
 
   let epub: Epub;
   let epubBlob: Blob;
+  let testImageBlob: Blob;
   let zipReader: ZipReader<Blob>;
 
   beforeAll(async () => {
@@ -206,6 +211,14 @@ describe('Full-featured EPUB', () => {
     epub.addCSS({
       content: testCssContent,
       filename: testCssFilename,
+    });
+
+    testImageBlob = new Blob([
+      await readFile(resolve(__dirname, `testdata/${testImageFilename}`)),
+    ]);
+    epub.addImage({
+      image: testImageBlob,
+      filename: testImageFilename,
     });
 
     epub.addSection({
@@ -285,7 +298,9 @@ describe('Full-featured EPUB', () => {
   });
 
   test('Validate package.opf', async () => {
-    expect(await getFileContentFromZip(zipReader, 'EPUB/package.opf')).toEqual(
+    expect(
+      await getStringContentFromZip(zipReader, 'EPUB/package.opf')
+    ).toEqual(
       `<?xml version="1.0" encoding="UTF-8"?>
 <package version="3.0" unique-identifier="pub-id" xmlns="http://www.idpf.org/2007/opf">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -299,6 +314,7 @@ describe('Full-featured EPUB', () => {
     <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
     <item id="epub.css" href="${testCssFilename}" media-type="text/css"/>
+    <item id="${testImageFilename}" href="${testImageFilename}" media-type="image/png"/>
     <item id="${testSectionFilename}" href="xhtml/${testSectionFilename}" media-type="application/xhtml+xml"/>
     <item id="${testSection2Filename}" href="xhtml/${testSection2Filename}" media-type="application/xhtml+xml"/>
     <item id="${testSection3Filename}" href="xhtml/${testSection3Filename}" media-type="application/xhtml+xml"/>
@@ -313,7 +329,7 @@ describe('Full-featured EPUB', () => {
   });
 
   test('Validate nav.xml', async () => {
-    expect(await getFileContentFromZip(zipReader, 'EPUB/nav.xhtml')).toEqual(
+    expect(await getStringContentFromZip(zipReader, 'EPUB/nav.xhtml')).toEqual(
       `<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
   <head>
@@ -337,7 +353,7 @@ describe('Full-featured EPUB', () => {
   });
 
   test('Validate toc.ncx', async () => {
-    expect(await getFileContentFromZip(zipReader, 'EPUB/toc.ncx')).toEqual(
+    expect(await getStringContentFromZip(zipReader, 'EPUB/toc.ncx')).toEqual(
       `<?xml version="1.0" encoding="UTF-8"?>
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
   <head>
@@ -365,7 +381,7 @@ describe('Full-featured EPUB', () => {
   });
 
   test('Validate CSS', async () => {
-    expect(await getFileContentFromZip(zipReader, `EPUB/${testCssFilename}`))
+    expect(await getStringContentFromZip(zipReader, `EPUB/${testCssFilename}`))
       .toEqual(`h1 {
   text-align: center;
 }
@@ -375,9 +391,17 @@ p {
 }`);
   });
 
+  test('Validate image', async () => {
+    const imageBlobFromZip =
+      (await getBlobContentFromZip(zipReader, `EPUB/${testImageFilename}`)) ||
+      new Blob();
+
+    expect(areBlobsEqual(imageBlobFromZip, testImageBlob)).toBeTruthy();
+  });
+
   test('Validate section with CSS', async () => {
     expect(
-      await getFileContentFromZip(
+      await getStringContentFromZip(
         zipReader,
         `EPUB/xhtml/${testSection2Filename}`
       )
@@ -399,7 +423,7 @@ p {
 
   test('Validate section excluded from TOC', async () => {
     expect(
-      await getFileContentFromZip(
+      await getStringContentFromZip(
         zipReader,
         `EPUB/xhtml/${testSection3Filename}`
       )
@@ -426,6 +450,12 @@ p {
   });
 });
 
+const areBlobsEqual = async (blob1: Blob, blob2: Blob): Promise<boolean> => {
+  return !Buffer.from(await blob1.arrayBuffer()).compare(
+    Buffer.from(await blob2.arrayBuffer())
+  );
+};
+
 const doesFileExist = async (filepath: string): Promise<boolean> => {
   try {
     await access(filepath);
@@ -436,7 +466,7 @@ const doesFileExist = async (filepath: string): Promise<boolean> => {
 };
 
 // filepath is the path to the file within the zip file
-const getFileContentFromZip = async (
+const getStringContentFromZip = async (
   zipReader: ZipReader<Blob>,
   filepath: string
 ): Promise<string | undefined> => {
@@ -444,6 +474,18 @@ const getFileContentFromZip = async (
     if (zipReaderEntry.filename === filepath) {
       const textWriter = new TextWriter();
       return await zipReaderEntry.getData(textWriter);
+    }
+  }
+};
+
+const getBlobContentFromZip = async (
+  zipReader: ZipReader<Blob>,
+  filepath: string
+): Promise<Blob | undefined> => {
+  for (const zipReaderEntry of await zipReader.getEntries()) {
+    if (zipReaderEntry.filename === filepath) {
+      const blobWriter = new BlobWriter();
+      return await zipReaderEntry.getData(blobWriter);
     }
   }
 };
